@@ -1,2 +1,2 @@
 # Discord-Pug-Bot
-Discord but for 5v5 scrims
+Discord bot to create scrims/pugs
