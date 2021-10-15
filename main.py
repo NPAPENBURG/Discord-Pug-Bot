@@ -367,6 +367,7 @@ async def join(ctx):
 
 
             # Adding Team Roles and Moving Players to Team Voice Chats
+            await asyncio.sleep(1)
             user1 = ctx.guild.get_member(int(qplayers[0].discord_id))
             player_voice1 = user1.voice
             if user1 == None:
@@ -377,7 +378,7 @@ async def join(ctx):
                 await user1.add_roles(role1)
                 await user1.move_to(channel1)
 
-
+            await asyncio.sleep(1)
             user2 = ctx.guild.get_member(int(qplayers[1].discord_id))
             player_voice2 = user2.voice
             if user2 == None:
@@ -388,7 +389,7 @@ async def join(ctx):
                 await user2.add_roles(role2)
                 await user2.move_to(channel2)
 
-
+            await asyncio.sleep(1)
             user3 = ctx.guild.get_member(int(qplayers[2].discord_id))
             player_voice3 = user3.voice
             if user3 == None:
@@ -399,8 +400,7 @@ async def join(ctx):
                 await user3.add_roles(role2)
                 await user3.move_to(channel2)
 
-
-
+            await asyncio.sleep(1)
             user4 = ctx.guild.get_member(int(qplayers[3].discord_id))
             player_voice4 = user4.voice
             if user4 == None:
@@ -411,8 +411,7 @@ async def join(ctx):
                 await user4.add_roles(role1)
                 await user4.move_to(channel1)
 
-
-
+            await asyncio.sleep(1)
             user5 = ctx.guild.get_member(int(qplayers[4].discord_id))
             player_voice5 = user5.voice
             if user5 == None:
@@ -423,7 +422,7 @@ async def join(ctx):
                 await user5.add_roles(role1)
                 await user5.move_to(channel1)
 
-
+            await asyncio.sleep(1)
             user6 = ctx.guild.get_member(int(qplayers[5].discord_id))
             player_voice6 = user6.voice
             if user6 == None:
@@ -434,8 +433,7 @@ async def join(ctx):
                 await user6.add_roles(role2)
                 await user6.move_to(channel2)
 
-
-
+            await asyncio.sleep(1)
             user7 = ctx.guild.get_member(int(qplayers[6].discord_id))
             player_voice7 = user7.voice
             if user7 == None:
@@ -446,7 +444,7 @@ async def join(ctx):
                 await user7.add_roles(role2)
                 await user7.move_to(channel2)
 
-
+            await asyncio.sleep(1)
             user8 = ctx.guild.get_member(int(qplayers[7].discord_id))
             player_voice8 = user8.voice
             if user8 == None:
@@ -457,7 +455,7 @@ async def join(ctx):
                 await user8.add_roles(role1)
                 await user8.move_to(channel1)
 
-
+            await asyncio.sleep(1)
             user9 = ctx.guild.get_member(int(qplayers[8].discord_id))
             player_voice9 = user9.voice
             if user9 == None:
@@ -468,7 +466,7 @@ async def join(ctx):
                 await user9.add_roles(role1)
                 await user9.move_to(channel1)
 
-
+            await asyncio.sleep(1)
             user10 = ctx.guild.get_member(int(qplayers[9].discord_id))
             player_voice10 = user10.voice
             if user10 == None:
