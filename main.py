@@ -357,59 +357,128 @@ async def join(ctx):
             await guild.create_voice_channel(f"Match{add1} Team1", category=category, overwrites=overwrites1)
             await guild.create_voice_channel(f"Match{add1} Team2", category=category, overwrites=overwrites2)
 
+            # Setting up to give roles to players
             role1 = discord.utils.get(guild.roles, name=f"Match{add1} Team1")
             role2 = discord.utils.get(guild.roles, name=f"Match{add1} Team2")
-            # Putting players discord objects into 2 lists
+
+            # Setting up to move Players
+            channel1 = discord.utils.get(ctx.guild.channels, name=f"Match{add1} Team1")
+            channel2 = discord.utils.get(ctx.guild.channels, name=f"Match{add1} Team2")
+
+
+            # Adding Team Roles and Moving Players to Team Voice Chats
             user1 = ctx.guild.get_member(int(qplayers[0].discord_id))
+            player_voice1 = user1.voice
             if user1 == None:
                 pass
+            elif player_voice1 == None:
+                await user1.add_roles(role1)
             else:
                 await user1.add_roles(role1)
+                await user1.move_to(channel1)
+
+
             user2 = ctx.guild.get_member(int(qplayers[1].discord_id))
+            player_voice2 = user2.voice
             if user2 == None:
                 pass
+            elif player_voice2 == None:
+                await user2.add_roles(role2)
             else:
                 await user2.add_roles(role2)
+                await user2.move_to(channel2)
+
+
             user3 = ctx.guild.get_member(int(qplayers[2].discord_id))
+            player_voice3 = user3.voice
             if user3 == None:
                 pass
+            elif player_voice3 == None:
+                await user3.add_roles(role2)
             else:
                 await user3.add_roles(role2)
+                await user3.move_to(channel2)
+
+
+
             user4 = ctx.guild.get_member(int(qplayers[3].discord_id))
+            player_voice4 = user4.voice
             if user4 == None:
                 pass
+            elif player_voice4 == None:
+                await user4.add_roles(role1)
             else:
                 await user4.add_roles(role1)
+                await user4.move_to(channel1)
+
+
+
             user5 = ctx.guild.get_member(int(qplayers[4].discord_id))
+            player_voice5 = user5.voice
             if user5 == None:
                 pass
+            elif player_voice5 == None:
+                await user5.add_roles(role1)
             else:
                 await user5.add_roles(role1)
+                await user5.move_to(channel1)
+
+
             user6 = ctx.guild.get_member(int(qplayers[5].discord_id))
+            player_voice6 = user6.voice
             if user6 == None:
                 pass
+            elif player_voice6 == None:
+                await user6.add_roles(role2)
             else:
                 await user6.add_roles(role2)
+                await user6.move_to(channel2)
+
+
+
             user7 = ctx.guild.get_member(int(qplayers[6].discord_id))
+            player_voice7 = user7.voice
             if user7 == None:
                 pass
+            elif player_voice7 == None:
+                await user7.add_roles(role2)
             else:
                 await user7.add_roles(role2)
+                await user7.move_to(channel2)
+
+
             user8 = ctx.guild.get_member(int(qplayers[7].discord_id))
+            player_voice8 = user8.voice
             if user8 == None:
                 pass
+            elif player_voice8 == None:
+                await user8.add_roles(role1)
             else:
                 await user8.add_roles(role1)
+                await user8.move_to(channel1)
+
+
             user9 = ctx.guild.get_member(int(qplayers[8].discord_id))
+            player_voice9 = user9.voice
             if user9 == None:
                 pass
+            elif player_voice9 == None:
+                await user9.add_roles(role1)
             else:
                 await user9.add_roles(role1)
+                await user9.move_to(channel1)
+
+
             user10 = ctx.guild.get_member(int(qplayers[9].discord_id))
+            player_voice10 = user10.voice
             if user10 == None:
                 pass
+            elif player_voice10 == None:
+                await user10.add_roles(role2)
             else:
                 await user10.add_roles(role2)
+                await user10.move_to(channel2)
+
 
             # Clearing all the lists for the next game.
             queueCount.clear()
@@ -553,6 +622,7 @@ async def matchresult(ctx, matchnumber, team):
                                   f"<@{player9.discord_id}> - 3 = {player9.elo}\n "
                                   f"<@{player10.discord_id}> - 3 = {player10.elo}",
                             inline=False)
+            await ctx.message.delete()
             await channel.send(embed=embed)
 
             # Getting role information
@@ -628,6 +698,7 @@ async def matchresult(ctx, matchnumber, team):
                                       f"<@{player9.discord_id}> + 5 = {player9.elo}\n "
                                       f"<@{player10.discord_id}> + 5 = {player10.elo}",
                                 inline=False)
+            await ctx.message.delete()
             await channel.send(embed=embed)
 
             # Getting role information
