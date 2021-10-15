@@ -155,9 +155,16 @@ async def changename(ctx, name, newname):
 
     if targetPlayer in playerPool:
         targetPlayer.name = newname
-        await ctx.send(f"players new name is {targetPlayer.name}")
+        embed = discord.Embed(title=f"", url="https://papathegoat.com/",
+                              description=f"players new name is {targetPlayer.name}",
+                              color=discord.Color.red())
+        await ctx.send(embed=embed)
+
     else:
-        await ctx.send('That player does not exist')
+        embed = discord.Embed(title=f"", url="https://papathegoat.com/",
+                              description=f"That player does not exist",
+                              color=discord.Color.red())
+        await ctx.send(embed=embed)
 
 
 # Command to check the leaderboard
@@ -217,7 +224,10 @@ async def testp(ctx):
 @commands.has_role('Admin')
 async def players(ctx):
     players = len(playerPool)
-    await ctx.send(players)
+    embed = discord.Embed(title=f"", url="https://papathegoat.com/",
+                          description=f"There are {players} registered!",
+                          color=discord.Color.red())
+    await ctx.send(embed=embed)
 
 
 # command to join the queue
@@ -419,7 +429,10 @@ async def join(ctx):
 @bot.command(pass_context=True, aliases=['q', 'Q'])
 async def queue(ctx):
     if ctx.channel.id == config.queue:
-        await ctx.send(f'There are {len(queueCount)} players in queue')
+        embed = discord.Embed(title=f"", url="https://papathegoat.com/",
+                              description=f'There are {len(queueCount)} players in queue',
+                              color=discord.Color.red())
+        await ctx.send(embed=embed)
 
     else:
         embed = discord.Embed(title=f"", url="https://papathegoat.com/",
@@ -626,7 +639,10 @@ async def matchresult(ctx, matchnumber, team):
             team2channel = discord.utils.get(guild.channels, name=f"Match{matchnumber} Team2")
             await team2channel.delete()
     else:
-        await ctx.send('That match number does not exist.')
+        embed = discord.Embed(title=f"", url="https://papathegoat.com/",
+                              description='That match number does not exist.',
+                              color=discord.Color.red())
+        await ctx.send(embed=embed)
 
 
 # bot command to leave queue
@@ -662,10 +678,19 @@ async def win(ctx, name):
     if targetPlayer in playerPool:
         targetPlayer.elo = int(targetPlayer.elo) + 5
         targetPlayer.win = int(targetPlayer.win) + 1
-        await ctx.send(f"{targetPlayer.name}'s elo is now {targetPlayer.elo}")
+
+        embed = discord.Embed(title=f"", url="https://papathegoat.com/",
+                              description=f"{targetPlayer.name}'s elo is now {targetPlayer.elo}",
+                              color=discord.Color.red())
+
+        await ctx.send(embed=embed)
         saveload.writePlayerPool(playerPool)
     else:
-        await ctx.send(f"That players name does not exist")
+
+        embed = discord.Embed(title=f"", url="https://papathegoat.com/",
+                              description='That players name does not exist',
+                              color=discord.Color.red())
+        await ctx.send(embed=embed)
 
 
 # Bot command to give a loss and take elo from a certain player.
@@ -677,10 +702,17 @@ async def loss(ctx, name):
         targetPlayer.elo = int(targetPlayer.elo) - 3
         targetPlayer.loss = int(targetPlayer.loss) + 1
 
-        await ctx.send(f"{targetPlayer.name}'s elo is now {targetPlayer.elo}")
+        embed = discord.Embed(title=f"", url="https://papathegoat.com/",
+                              description=f'{targetPlayer.name} elo is now {targetPlayer.elo}',
+                              color=discord.Color.red())
+        await ctx.send(embed=embed)
         saveload.writePlayerPool(playerPool)
     else:
-        await ctx.send(f"That players name does not exist")
+
+        embed = discord.Embed(title=f"", url="https://papathegoat.com/",
+                              description=f"That players name does not exist",
+                              color=discord.Color.red())
+        await ctx.send(embed=embed)
 
 
 # Command to clear the queue
@@ -688,7 +720,10 @@ async def loss(ctx, name):
 @commands.has_role('Admin')
 async def clearqueue(ctx):
     queueCount.clear()
-    await ctx.send('The queue is cleared')
+    embed = discord.Embed(title=f"", url="https://papathegoat.com/",
+                          description=f"The queue is cleared",
+                          color=discord.Color.red())
+    await ctx.send(embed=embed)
 
 
 @bot.command()
@@ -744,7 +779,11 @@ async def elo(self, ctx, name, elo):
     targetPlayer = getPlayerObject(str(name), 'name', playerPool)
     targetPlayer.elo = int(elo)
     saveload.writePlayerPool(playerPool)
-    await ctx.send(f'{targetPlayer.name} elo is now {targetPlayer.elo}')
+
+    embed = discord.Embed(title=f"", url="https://papathegoat.com/",
+                          description=f'{targetPlayer.name} elo is now {targetPlayer.elo}',
+                          color=discord.Color.red())
+    await ctx.send(embed=embed)
 
 
 # Pages for help command
