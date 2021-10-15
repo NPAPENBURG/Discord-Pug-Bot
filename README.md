@@ -9,7 +9,7 @@ The bot will keep tracker of players elo, wins, and loses. It will also decide t
 
 ![example of Match being made](data/gOjemq1.png)
 ![example of Stats](data/gaGzC7z.png)
-![example of Leaderboard](data/LN7Jt9L.png)
+![example of Leaderboard](data/lb.png)
 
 
 ## Requirements
