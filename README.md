@@ -7,9 +7,9 @@ The bot is programmed entirely in Python 3, and it makes use of the [discord.py]
 
 The bot will keep tracker of players elo, wins, and loses. It will also decide the map, teams, and who defends first. Temp roles and voice channels are also created. The bot will move players who are in voice chats to their teams voice chat automatically. After a game is played users will do a command to call the result of the match in which the bot will update all the players information automatically.
 
-![example of Match being made](https://imgur.com/a/ZGVcjFq)
-![example of Stats](https://imgur.com/gaGzC7z)
-![example of Leaderboard](https://imgur.com/LN7Jt9L)
+![example of Match being made](data/gOjemq1.png)
+![example of Stats](data/gaGzC7z.png)
+![example of Leaderboard](data/lb.png)
 
 
 ## Requirements
