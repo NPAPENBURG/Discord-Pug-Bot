@@ -54,11 +54,14 @@ async def on_ready():
 # Command error responder
 @bot.event
 async def on_command_error(ctx, error):
+    # If user is missing role requirements lets them know
     if isinstance(error, commands.MissingRole):
         embed = discord.Embed(title=f"", url="https://papathegoat.com/",
                               description="You don't have the required role to do this command",
                               color=discord.Color.red())
         await ctx.send(embed=embed)
+
+    # If user inputs something that isn't a command. Let them know.
     elif isinstance(error, commands.CommandNotFound):
         embed = discord.Embed(title=f"", url="https://papathegoat.com/",
                               description="This is not a command. Try again.",
@@ -69,6 +72,7 @@ async def on_command_error(ctx, error):
 # Command to register with the bot.
 @bot.command()
 async def register(ctx, name):
+    # Command must be done in the register channel
     if ctx.channel.id == config.registerID:
         # Getting the users discord ID and Author of Command
         user = ctx.message.author
@@ -83,16 +87,21 @@ async def register(ctx, name):
         targetPlayerid = getPlayerObject(D_ID, "discord_id", playerPool)
         targetPlayername = getPlayerObject(name, "name", playerPool)
 
+        # If Player is in Player Pool they are registered already.
         if targetPlayerid in playerPool:
             embed = discord.Embed(title=f"", url="https://papathegoat.com/",
                                   description='You are already registered.',
                                   color=discord.Color.red())
             await ctx.send(embed=embed)
+
+        # If Player name is already taken. Let them know.
         elif targetPlayername in playerPool:
             embed = discord.Embed(title=f"", url="https://papathegoat.com/",
                                   description='That name is already taken.',
                                   color=discord.Color.red())
             await ctx.send(embed=embed)
+
+        # Register the player. Change nickname. Give Registered Role
         else:
             playerPool.append(tempPlayer)
             saveload.writePlayerPool(playerPool)
@@ -102,6 +111,8 @@ async def register(ctx, name):
             await ctx.send(embed=embed)
             await user.add_roles(role)
             await user.edit(nick=name)
+
+    # If the command isn't done in the registered channel. Let them know
     else:
         embed = discord.Embed(title=f"", url="https://papathegoat.com/",
                               description=f'You have to register in the <#{config.registerID}> channel',
@@ -112,11 +123,13 @@ async def register(ctx, name):
 # Check a Players Stats Command
 @bot.command()
 async def stats(ctx, name):
+    # Command must be done in the queue channel
     if ctx.channel.id == config.queue:
 
         # Getting player stats
         targetPlayer = getPlayerObject(name, "name", playerPool)
 
+        # If Player is in the pool. Display the stats
         if targetPlayer in playerPool:
 
             # Discord embed format
@@ -129,13 +142,12 @@ async def stats(ctx, name):
             await ctx.send(embed=embed)
 
 
-
+        # If the player doesn't exist. Let them know.
         else:
 
             embed = discord.Embed(title=f"", url="https://papathegoat.com/",
                                   description="That player does not exist",
                                   color=discord.Color.red())
-            # Member does not exist
             await ctx.send(embed=embed)
 
 
@@ -151,11 +163,15 @@ async def stats(ctx, name):
 @bot.command()
 @commands.has_role('Admin')
 async def changename(ctx, name, newname):
+    # Get Players Object
     targetPlayer = getPlayerObject(name, "name", playerPool)
 
+    # check to see if player object is in list
+    # If it is. Change the name
     if targetPlayer in playerPool:
         targetPlayer.name = newname
 
+        # Getting discord user object to change server nickname
         user = ctx.guild.get_member(int(targetPlayer.discord_id))
         await user.edit(nick=newname)
 
@@ -164,6 +180,8 @@ async def changename(ctx, name, newname):
                               color=discord.Color.red())
         await ctx.send(embed=embed)
 
+
+    # Let the user know that player doesn't exist
     else:
         embed = discord.Embed(title=f"", url="https://papathegoat.com/",
                               description=f"That player does not exist",
@@ -338,6 +356,7 @@ async def join(ctx):
             name = 'PUG NIGHT'
             category = discord.utils.get(ctx.guild.categories, name=name)
 
+            # Assigning team roles
             guild = ctx.guild
             team1role = discord.utils.get(guild.roles, name=f"Match{add1} Team1")
             team2role = discord.utils.get(guild.roles, name=f"Match{add1} Team2")
@@ -365,15 +384,20 @@ async def join(ctx):
             channel1 = discord.utils.get(ctx.guild.channels, name=f"Match{add1} Team1")
             channel2 = discord.utils.get(ctx.guild.channels, name=f"Match{add1} Team2")
 
-
             # Adding Team Roles and Moving Players to Team Voice Chats
             await asyncio.sleep(1)
+            # Get player 1's Discord Object
             user1 = ctx.guild.get_member(int(qplayers[0].discord_id))
+            # Store if Player is in a voice channel
             player_voice1 = user1.voice
+
+            # If Player doesn't exist. Pass. (This is used for bot testing)
             if user1 == None:
                 pass
+            # If player is not in voice channel. Give role only
             elif player_voice1 == None:
                 await user1.add_roles(role1)
+            # If player is in voice channel Give role and move them to voice channel
             else:
                 await user1.add_roles(role1)
                 await user1.move_to(channel1)
@@ -476,7 +500,6 @@ async def join(ctx):
             else:
                 await user10.add_roles(role2)
                 await user10.move_to(channel2)
-
 
             # Clearing all the lists for the next game.
             queueCount.clear()
@@ -684,18 +707,18 @@ async def matchresult(ctx, matchnumber, team):
             embed.add_field(name="Winner", value='Team 1', inline=False)
             embed.add_field(name="Team #1",
                             value=f"<@{player1.discord_id}> - 3 = {player1.elo}\n "
-                                    f"<@{player2.discord_id}> - 3 = {player2.elo}\n "
-                                    f"<@{player3.discord_id}> - 3 = {player3.elo}\n"
-                                    f"<@{player4.discord_id}> - 3 = {player4.elo}\n"
-                                     f"<@{player5.discord_id}> - 3 = {player5.elo}",
+                                  f"<@{player2.discord_id}> - 3 = {player2.elo}\n "
+                                  f"<@{player3.discord_id}> - 3 = {player3.elo}\n"
+                                  f"<@{player4.discord_id}> - 3 = {player4.elo}\n"
+                                  f"<@{player5.discord_id}> - 3 = {player5.elo}",
                             inline=False)
             embed.add_field(name="Team #2",
-                                value=f"<@{player6.discord_id}> + 5 = {player6.elo}\n "
-                                      f"<@{player7.discord_id}> + 5 = {player7.elo}\n "
-                                      f"<@{player8.discord_id}> + 5 = {player8.elo}\n "
-                                      f"<@{player9.discord_id}> + 5 = {player9.elo}\n "
-                                      f"<@{player10.discord_id}> + 5 = {player10.elo}",
-                                inline=False)
+                            value=f"<@{player6.discord_id}> + 5 = {player6.elo}\n "
+                                  f"<@{player7.discord_id}> + 5 = {player7.elo}\n "
+                                  f"<@{player8.discord_id}> + 5 = {player8.elo}\n "
+                                  f"<@{player9.discord_id}> + 5 = {player9.elo}\n "
+                                  f"<@{player10.discord_id}> + 5 = {player10.elo}",
+                            inline=False)
             await ctx.message.delete()
             await channel.send(embed=embed)
 
@@ -829,7 +852,6 @@ async def matchend(ctx, matchnumber):
         embed = discord.Embed(title='', description=f'Match #{matchNum} has been cancelled',
                               color=discord.Color.red())
         await ctx.send(embed=embed)
-
 
         # Remove role
         guild = ctx.guild
