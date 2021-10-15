@@ -155,8 +155,12 @@ async def changename(ctx, name, newname):
 
     if targetPlayer in playerPool:
         targetPlayer.name = newname
+
+        user = ctx.guild.get_member(int(targetPlayer.discord_id))
+        await user.edit(nick=newname)
+
         embed = discord.Embed(title=f"", url="https://papathegoat.com/",
-                              description=f"players new name is {targetPlayer.name}",
+                              description=f"{name} new name is {targetPlayer.name}",
                               color=discord.Color.red())
         await ctx.send(embed=embed)
 
