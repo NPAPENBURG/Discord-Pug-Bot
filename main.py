@@ -8,9 +8,11 @@ import discord.utils
 import random
 import asyncio
 from matchcountclass import MatchCounts
+import requests
+
 
 intents = discord.Intents().all()
-bot = commands.Bot(command_prefix='-', intents=intents, help_command=None)
+bot = commands.Bot(command_prefix='=', intents=intents, help_command=None)
 
 # Stored Registered Players
 playerPool = []
@@ -20,6 +22,7 @@ matchHistory = []
 matchCount = []
 # Players in Queue
 queueCount = []
+gameStarted = 0
 # List of Maps
 mapList = ['BIND', 'SPLIT', 'HAVEN', 'ASCENT', 'BREEZE', 'FRACTURE']
 randomTeam = ['Team 1', 'Team 2']
@@ -35,6 +38,13 @@ registerID = 895801952502423583
 resultID = 895802052750503966
 queue = 895803600629035018
 
+
+# Checking to see if I am rate limted
+r = requests.head(url="https://discord.com/api/v1")
+try:
+    print(f"Rate limit {int(r.headers['Retry-After']) / 60} minutes left")
+except:
+    print("No rate limit")
 
 # Reusable function to get the player object
 def getPlayerObject(searchVal, searchAttr, fromList):
@@ -54,14 +64,11 @@ async def on_ready():
 # Command error responder
 @bot.event
 async def on_command_error(ctx, error):
-    # If user is missing role requirements lets them know
     if isinstance(error, commands.MissingRole):
         embed = discord.Embed(title=f"", url="https://papathegoat.com/",
                               description="You don't have the required role to do this command",
                               color=discord.Color.red())
         await ctx.send(embed=embed)
-
-    # If user inputs something that isn't a command. Let them know.
     elif isinstance(error, commands.CommandNotFound):
         embed = discord.Embed(title=f"", url="https://papathegoat.com/",
                               description="This is not a command. Try again.",
@@ -72,7 +79,7 @@ async def on_command_error(ctx, error):
 # Command to register with the bot.
 @bot.command()
 async def register(ctx, name):
-    # Command must be done in the register channel
+    await asyncio.sleep(1)
     if ctx.channel.id == config.registerID:
         # Getting the users discord ID and Author of Command
         user = ctx.message.author
@@ -87,21 +94,16 @@ async def register(ctx, name):
         targetPlayerid = getPlayerObject(D_ID, "discord_id", playerPool)
         targetPlayername = getPlayerObject(name, "name", playerPool)
 
-        # If Player is in Player Pool they are registered already.
         if targetPlayerid in playerPool:
             embed = discord.Embed(title=f"", url="https://papathegoat.com/",
                                   description='You are already registered.',
                                   color=discord.Color.red())
             await ctx.send(embed=embed)
-
-        # If Player name is already taken. Let them know.
         elif targetPlayername in playerPool:
             embed = discord.Embed(title=f"", url="https://papathegoat.com/",
                                   description='That name is already taken.',
                                   color=discord.Color.red())
             await ctx.send(embed=embed)
-
-        # Register the player. Change nickname. Give Registered Role
         else:
             playerPool.append(tempPlayer)
             saveload.writePlayerPool(playerPool)
@@ -109,10 +111,10 @@ async def register(ctx, name):
                                   description=f'You are now registered.',
                                   color=discord.Color.red())
             await ctx.send(embed=embed)
+            await asyncio.sleep(1)
             await user.add_roles(role)
+            await asyncio.sleep(1)
             await user.edit(nick=name)
-
-    # If the command isn't done in the registered channel. Let them know
     else:
         embed = discord.Embed(title=f"", url="https://papathegoat.com/",
                               description=f'You have to register in the <#{config.registerID}> channel',
@@ -123,13 +125,12 @@ async def register(ctx, name):
 # Check a Players Stats Command
 @bot.command()
 async def stats(ctx, name):
-    # Command must be done in the queue channel
+    await asyncio.sleep(1)
     if ctx.channel.id == config.queue:
 
         # Getting player stats
         targetPlayer = getPlayerObject(name, "name", playerPool)
 
-        # If Player is in the pool. Display the stats
         if targetPlayer in playerPool:
 
             # Discord embed format
@@ -142,12 +143,13 @@ async def stats(ctx, name):
             await ctx.send(embed=embed)
 
 
-        # If the player doesn't exist. Let them know.
+
         else:
 
             embed = discord.Embed(title=f"", url="https://papathegoat.com/",
                                   description="That player does not exist",
                                   color=discord.Color.red())
+            # Member does not exist
             await ctx.send(embed=embed)
 
 
@@ -163,15 +165,11 @@ async def stats(ctx, name):
 @bot.command()
 @commands.has_role('Admin')
 async def changename(ctx, name, newname):
-    # Get Players Object
     targetPlayer = getPlayerObject(name, "name", playerPool)
 
-    # check to see if player object is in list
-    # If it is. Change the name
     if targetPlayer in playerPool:
         targetPlayer.name = newname
 
-        # Getting discord user object to change server nickname
         user = ctx.guild.get_member(int(targetPlayer.discord_id))
         await user.edit(nick=newname)
 
@@ -180,8 +178,6 @@ async def changename(ctx, name, newname):
                               color=discord.Color.red())
         await ctx.send(embed=embed)
 
-
-    # Let the user know that player doesn't exist
     else:
         embed = discord.Embed(title=f"", url="https://papathegoat.com/",
                               description=f"That player does not exist",
@@ -192,6 +188,7 @@ async def changename(ctx, name, newname):
 # Command to check the leaderboard
 @bot.command(pass_context=True, aliases=['leaderboard'])
 async def lb(ctx):
+    await asyncio.sleep(1)
     if ctx.channel.id == config.queue:
         # Getting user information
         D_ID = ctx.message.author.id
@@ -255,273 +252,319 @@ async def players(ctx):
 # command to join the queue
 @bot.command(pass_context=True, aliases=['j', 'J'])
 async def join(ctx):
-    if ctx.channel.id == config.queue:
-        # Getting users Player Class information
-        D_ID = ctx.message.author.id
-        targetPlayer = getPlayerObject(D_ID, "discord_id", playerPool)
+    await asyncio.sleep(1)
+    global gameStarted
+    if gameStarted == 0:
+        if ctx.channel.id == config.queue:
+            # Getting users Player Class information
+            D_ID = ctx.message.author.id
+            targetPlayer = getPlayerObject(D_ID, "discord_id", playerPool)
 
-        # If Player is already in queue. Don't let them in queue
-        if targetPlayer in queueCount:
-            embed = discord.Embed(title=f"", url="https://papathegoat.com/",
-                                  description='You are already in the Queue.',
-                                  color=discord.Color.red())
-            await ctx.send(embed=embed)
+            # If Player is already in queue. Don't let them in queue
+            if targetPlayer in queueCount:
+                embed = discord.Embed(title=f"", url="https://papathegoat.com/",
+                                      description='You are already in the Queue.',
+                                      color=discord.Color.red())
+                await ctx.send(embed=embed)
 
-        # Player not found
-        elif targetPlayer not in playerPool:
-            embed = discord.Embed(title=f"", url="https://papathegoat.com/",
-                                  description='You are not registered.',
-                                  color=discord.Color.red())
-            await ctx.send(embed=embed)
-
-
-        # If Player is already in a match. Don't let them in queue
-        elif targetPlayer.currentmatch == 1:
-            embed = discord.Embed(title=f"", url="https://papathegoat.com/",
-                                  description='You are already in a match.',
-                                  color=discord.Color.red())
-            await ctx.send(embed=embed)
+            # Player not found
+            elif targetPlayer not in playerPool:
+                embed = discord.Embed(title=f"", url="https://papathegoat.com/",
+                                      description='You are not registered.',
+                                      color=discord.Color.red())
+                await ctx.send(embed=embed)
 
 
-        # If there are 9 people in queue and player is the 10th. Lets get the Match started
-        elif len(queueCount) == (config.pugsize - 1):
-            # Team list where players will be assigned too.
-            team1 = []
-            team2 = []
+            # If Player is already in a match. Don't let them in queue
+            elif targetPlayer.currentmatch == 1:
+                embed = discord.Embed(title=f"", url="https://papathegoat.com/",
+                                      description='You are already in a match.',
+                                      color=discord.Color.red())
+                await ctx.send(embed=embed)
 
-            # Adding the 10th Person to the queue
-            queueCount.append(targetPlayer)
-            embed = discord.Embed(title=f"", url="https://papathegoat.com/",
-                                  description=f'{targetPlayer.name} joined the queue',
-                                  color=discord.Color.red())
-            await ctx.send(embed=embed)
 
-            # Reordering the Queue so its highest to lowest elo
-            qplayers = sorted(queueCount, key=lambda e: e.elo, reverse=True)
+            # If there are 9 people in queue and player is the 10th. Lets get the Match started
+            elif len(queueCount) == (config.pugsize - 1):
+                gameStarted = 1
+                # Team list where players will be assigned too.
+                team1 = []
+                team2 = []
 
-            # Selecting Players and adding them to team lists
-            team1.append(qplayers[0].name)
-            team2.append(qplayers[1].name)
-            team2.append(qplayers[2].name)
-            team1.append(qplayers[3].name)
-            team1.append(qplayers[4].name)
-            team2.append(qplayers[5].name)
-            team2.append(qplayers[6].name)
-            team1.append(qplayers[7].name)
-            team1.append(qplayers[8].name)
-            team2.append(qplayers[9].name)
+                # Adding the 10th Person to the queue
+                queueCount.append(targetPlayer)
+                embed = discord.Embed(title=f"", url="https://papathegoat.com/",
+                                      description=f'{targetPlayer.name} joined the queue',
+                                      color=discord.Color.red())
+                await ctx.send(embed=embed)
 
-            # Setting Players to currentmatch = 1 so if they are in a game. They can't rejoin queue.
-            pcount = 0
-            for x in range(10):
-                qplayers[pcount].currentmatch = 1
-                pcount += 1
-            saveload.writePlayerPool(playerPool)
+                await asyncio.sleep(1)
+                embed2 = discord.Embed(title=f"", url="https://papathegoat.com/",
+                                      description='A match is being created please wait a few moments',
+                                      color=discord.Color.red())
+                await ctx.send(embed=embed2)
 
-            # setting up the matchcount number and saving it
-            add1 = matchCount[-1].number + 1
-            tempgamenum = MatchCounts(add1)
-            matchCount.append(tempgamenum)
-            saveload.writeMatchCount(matchCount)
+                # Reordering the Queue so its highest to lowest elo
+                qplayers = sorted(queueCount, key=lambda e: e.elo, reverse=True)
 
-            # Saving the match infomation via pickles
-            tempMatch = Match(number=tempgamenum, team1=team1, team2=team2)
-            matchHistory.append(tempMatch)
-            saveload.writeMatchHistory(matchHistory)
-            # sending embed to discord channel for teams and map
-            channel = bot.get_channel(config.announcementID)
-            embed = discord.Embed(title=f"Game #{tempgamenum.number}", description="", color=discord.Color.red())
-            embed.add_field(name="Map", value=f"{random.choice(mapList)}", inline=False)
-            embed.add_field(name="Team #1",
-                            value=f"<@{qplayers[0].discord_id}>, <@{qplayers[3].discord_id}>, <@{qplayers[4].discord_id}>, <@{qplayers[7].discord_id}>, <@{qplayers[8].discord_id}>",
-                            inline=False)
-            embed.add_field(name="Team #2",
-                            value=f"<@{qplayers[1].discord_id}>, <@{qplayers[2].discord_id}>, <@{qplayers[5].discord_id}>, <@{qplayers[6].discord_id}>, <@{qplayers[9].discord_id}>",
-                            inline=False)
-            embed.add_field(name="Defending Team",
-                            value=f"{random.choice(randomTeam)}",
-                            inline=False)
-            await channel.send(
-                f"<@{qplayers[0].discord_id}> <@{qplayers[3].discord_id}> <@{qplayers[4].discord_id}> <@{qplayers[7].discord_id}> <@{qplayers[8].discord_id}> <@{qplayers[1].discord_id}> <@{qplayers[2].discord_id}> <@{qplayers[5].discord_id}> <@{qplayers[6].discord_id}> <@{qplayers[9].discord_id}>",
-                embed=embed)
+                # Selecting Players and adding them to team lists
+                team1.append(qplayers[0].name)
+                team2.append(qplayers[1].name)
+                team2.append(qplayers[2].name)
+                team1.append(qplayers[3].name)
+                team1.append(qplayers[4].name)
+                team2.append(qplayers[5].name)
+                team2.append(qplayers[6].name)
+                team1.append(qplayers[7].name)
+                team1.append(qplayers[8].name)
+                team2.append(qplayers[9].name)
 
-            # Create Temp Roles
-            guild = ctx.guild
-            await guild.create_role(name=f"Match{add1} Team1")
-            await guild.create_role(name=f"Match{add1} Team2")
+                # Setting Players to currentmatch = 1 so if they are in a game. They can't rejoin queue.
+                pcount = 0
+                for x in range(10):
+                    qplayers[pcount].currentmatch = 1
+                    pcount += 1
+                saveload.writePlayerPool(playerPool)
 
-            # Create Voice Channels
+                # setting up the matchcount number and saving it
+                add1 = matchCount[-1].number + 1
+                tempgamenum = MatchCounts(add1)
+                matchCount.append(tempgamenum)
+                saveload.writeMatchCount(matchCount)
 
-            # Getting category and role information to set channels.
-            name = 'PUG NIGHT'
-            category = discord.utils.get(ctx.guild.categories, name=name)
+                # Saving the match infomation via pickles
+                tempMatch = Match(number=tempgamenum, team1=team1, team2=team2)
+                matchHistory.append(tempMatch)
+                saveload.writeMatchHistory(matchHistory)
+                # sending embed to discord channel for teams and map
+                channel = bot.get_channel(config.announcementID)
+                embed = discord.Embed(title=f"Game #{tempgamenum.number}", description="", color=discord.Color.red())
+                embed.add_field(name="Map", value=f"{random.choice(mapList)}", inline=False)
+                embed.add_field(name="Team #1",
+                                value=f"<@{qplayers[0].discord_id}>, <@{qplayers[3].discord_id}>, <@{qplayers[4].discord_id}>, <@{qplayers[7].discord_id}>, <@{qplayers[8].discord_id}>",
+                                inline=False)
+                embed.add_field(name="Team #2",
+                                value=f"<@{qplayers[1].discord_id}>, <@{qplayers[2].discord_id}>, <@{qplayers[5].discord_id}>, <@{qplayers[6].discord_id}>, <@{qplayers[9].discord_id}>",
+                                inline=False)
+                embed.add_field(name="Defending Team",
+                                value=f"{random.choice(randomTeam)}",
+                                inline=False)
+                await channel.send(
+                    f"<@{qplayers[0].discord_id}> <@{qplayers[3].discord_id}> <@{qplayers[4].discord_id}> <@{qplayers[7].discord_id}> <@{qplayers[8].discord_id}> <@{qplayers[1].discord_id}> <@{qplayers[2].discord_id}> <@{qplayers[5].discord_id}> <@{qplayers[6].discord_id}> <@{qplayers[9].discord_id}>",
+                    embed=embed)
 
-            # Assigning team roles
-            guild = ctx.guild
-            team1role = discord.utils.get(guild.roles, name=f"Match{add1} Team1")
-            team2role = discord.utils.get(guild.roles, name=f"Match{add1} Team2")
+                # Create Temp Roles
+                guild = ctx.guild
+                await guild.create_role(name=f"Match{add1} Team1")
+                await guild.create_role(name=f"Match{add1} Team2")
 
-            # Overwrites for team 1
-            overwrites1 = {
-                guild.default_role: discord.PermissionOverwrite(read_messages=False),
-                team1role: discord.PermissionOverwrite(read_messages=True)
-            }
-            # Overwrites for team 2
-            overwrites2 = {
-                guild.default_role: discord.PermissionOverwrite(read_messages=False),
-                team2role: discord.PermissionOverwrite(read_messages=True)
-            }
+                # Create Voice Channels
 
-            # Creating voice channels for the teams on that match.
-            await guild.create_voice_channel(f"Match{add1} Team1", category=category, overwrites=overwrites1)
-            await guild.create_voice_channel(f"Match{add1} Team2", category=category, overwrites=overwrites2)
+                # Getting category and role information to set channels.
+                name = 'PUG NIGHT'
+                category = discord.utils.get(ctx.guild.categories, name=name)
 
-            # Setting up to give roles to players
-            role1 = discord.utils.get(guild.roles, name=f"Match{add1} Team1")
-            role2 = discord.utils.get(guild.roles, name=f"Match{add1} Team2")
+                guild = ctx.guild
+                team1role = discord.utils.get(guild.roles, name=f"Match{add1} Team1")
+                team2role = discord.utils.get(guild.roles, name=f"Match{add1} Team2")
 
-            # Setting up to move Players
-            channel1 = discord.utils.get(ctx.guild.channels, name=f"Match{add1} Team1")
-            channel2 = discord.utils.get(ctx.guild.channels, name=f"Match{add1} Team2")
+                # Overwrites for team 1
+                overwrites1 = {
+                    guild.default_role: discord.PermissionOverwrite(read_messages=False),
+                    team1role: discord.PermissionOverwrite(read_messages=True)
+                }
+                # Overwrites for team 2
+                overwrites2 = {
+                    guild.default_role: discord.PermissionOverwrite(read_messages=False),
+                    team2role: discord.PermissionOverwrite(read_messages=True)
+                }
 
-            # Adding Team Roles and Moving Players to Team Voice Chats
-            await asyncio.sleep(1)
-            # Get player 1's Discord Object
-            user1 = ctx.guild.get_member(int(qplayers[0].discord_id))
-            # Store if Player is in a voice channel
-            player_voice1 = user1.voice
+                # Creating voice channels for the teams on that match.
+                await guild.create_voice_channel(f"Match{add1} Team1", category=category, overwrites=overwrites1)
+                await guild.create_voice_channel(f"Match{add1} Team2", category=category, overwrites=overwrites2)
 
-            # If Player doesn't exist. Pass. (This is used for bot testing)
-            if user1 == None:
-                pass
-            # If player is not in voice channel. Give role only
-            elif player_voice1 == None:
-                await user1.add_roles(role1)
-            # If player is in voice channel Give role and move them to voice channel
+                # Setting up to give roles to players
+                role1 = discord.utils.get(guild.roles, name=f"Match{add1} Team1")
+                role2 = discord.utils.get(guild.roles, name=f"Match{add1} Team2")
+
+                # Setting up to move Players
+                channel1 = discord.utils.get(ctx.guild.channels, name=f"Match{add1} Team1")
+                channel2 = discord.utils.get(ctx.guild.channels, name=f"Match{add1} Team2")
+
+
+                # Adding Team Roles and Moving Players to Team Voice Chats
+                await asyncio.sleep(1)
+                user1 = ctx.guild.get_member(int(qplayers[0].discord_id))
+                player_voice1 = user1.voice
+                if user1 == None:
+                    pass
+                elif player_voice1 == None:
+                    await asyncio.sleep(1)
+                    await user1.add_roles(role1)
+                else:
+                    await asyncio.sleep(1)
+                    await user1.add_roles(role1)
+                    await asyncio.sleep(1)
+                    await user1.move_to(channel1)
+
+                await asyncio.sleep(1)
+                user2 = ctx.guild.get_member(int(qplayers[1].discord_id))
+                player_voice2 = user2.voice
+                if user2 == None:
+                    pass
+                elif player_voice2 == None:
+                    await asyncio.sleep(1)
+                    await user2.add_roles(role2)
+                else:
+                    await asyncio.sleep(1)
+                    await user2.add_roles(role2)
+                    await asyncio.sleep(1)
+                    await user2.move_to(channel2)
+
+                await asyncio.sleep(1)
+                user3 = ctx.guild.get_member(int(qplayers[2].discord_id))
+                player_voice3 = user3.voice
+                if user3 == None:
+                    pass
+                elif player_voice3 == None:
+                    await asyncio.sleep(1)
+                    await user3.add_roles(role2)
+                else:
+                    await asyncio.sleep(1)
+                    await user3.add_roles(role2)
+                    await asyncio.sleep(1)
+                    await user3.move_to(channel2)
+
+                await asyncio.sleep(1)
+                user4 = ctx.guild.get_member(int(qplayers[3].discord_id))
+                player_voice4 = user4.voice
+                if user4 == None:
+                    pass
+                elif player_voice4 == None:
+                    await asyncio.sleep(1)
+                    await user4.add_roles(role1)
+                else:
+                    await asyncio.sleep(1)
+                    await user4.add_roles(role1)
+                    await asyncio.sleep(1)
+                    await user4.move_to(channel1)
+
+                await asyncio.sleep(1)
+                user5 = ctx.guild.get_member(int(qplayers[4].discord_id))
+                player_voice5 = user5.voice
+                if user5 == None:
+                    pass
+                elif player_voice5 == None:
+                    await asyncio.sleep(1)
+                    await user5.add_roles(role1)
+                else:
+                    await asyncio.sleep(1)
+                    await user5.add_roles(role1)
+                    await asyncio.sleep(1)
+                    await user5.move_to(channel1)
+
+                await asyncio.sleep(1)
+                user6 = ctx.guild.get_member(int(qplayers[5].discord_id))
+                player_voice6 = user6.voice
+                if user6 == None:
+                    pass
+                elif player_voice6 == None:
+                    await asyncio.sleep(1)
+                    await user6.add_roles(role2)
+                else:
+                    await asyncio.sleep(1)
+                    await user6.add_roles(role2)
+                    await asyncio.sleep(1)
+                    await user6.move_to(channel2)
+
+                await asyncio.sleep(1)
+                user7 = ctx.guild.get_member(int(qplayers[6].discord_id))
+                player_voice7 = user7.voice
+                if user7 == None:
+                    pass
+                elif player_voice7 == None:
+                    await asyncio.sleep(1)
+                    await user7.add_roles(role2)
+                else:
+                    await asyncio.sleep(1)
+                    await user7.add_roles(role2)
+                    await asyncio.sleep(1)
+                    await user7.move_to(channel2)
+
+                await asyncio.sleep(1)
+                user8 = ctx.guild.get_member(int(qplayers[7].discord_id))
+                player_voice8 = user8.voice
+                if user8 == None:
+                    pass
+                elif player_voice8 == None:
+                    await asyncio.sleep(1)
+                    await user8.add_roles(role1)
+                else:
+                    await asyncio.sleep(1)
+                    await user8.add_roles(role1)
+                    await asyncio.sleep(1)
+                    await user8.move_to(channel1)
+
+                await asyncio.sleep(1)
+                user9 = ctx.guild.get_member(int(qplayers[8].discord_id))
+                player_voice9 = user9.voice
+                if user9 == None:
+                    pass
+                elif player_voice9 == None:
+                    await asyncio.sleep(1)
+                    await user9.add_roles(role1)
+                else:
+                    await asyncio.sleep(1)
+                    await user9.add_roles(role1)
+                    await asyncio.sleep(1)
+                    await user9.move_to(channel1)
+
+                await asyncio.sleep(1)
+                user10 = ctx.guild.get_member(int(qplayers[9].discord_id))
+                player_voice10 = user10.voice
+                if user10 == None:
+                    pass
+                elif player_voice10 == None:
+                    await asyncio.sleep(1)
+                    await user10.add_roles(role2)
+                else:
+                    await asyncio.sleep(1)
+                    await user10.add_roles(role2)
+                    await asyncio.sleep(1)
+                    await user10.move_to(channel2)
+
+
+                # Clearing all the lists for the next game.
+                queueCount.clear()
+                qplayers.clear()
+                gameStarted = 0
+
+                embed1 = discord.Embed(title='',
+                                      description=f'Match has now been made. Players can now queue.',
+                                      color=discord.Color.red())
+                queueCount.append(targetPlayer)
+                await ctx.send(embed=embed1)
+            # add user to queue if above if statements are not met.
             else:
-                await user1.add_roles(role1)
-                await user1.move_to(channel1)
-
-            await asyncio.sleep(1)
-            user2 = ctx.guild.get_member(int(qplayers[1].discord_id))
-            player_voice2 = user2.voice
-            if user2 == None:
-                pass
-            elif player_voice2 == None:
-                await user2.add_roles(role2)
-            else:
-                await user2.add_roles(role2)
-                await user2.move_to(channel2)
-
-            await asyncio.sleep(1)
-            user3 = ctx.guild.get_member(int(qplayers[2].discord_id))
-            player_voice3 = user3.voice
-            if user3 == None:
-                pass
-            elif player_voice3 == None:
-                await user3.add_roles(role2)
-            else:
-                await user3.add_roles(role2)
-                await user3.move_to(channel2)
-
-            await asyncio.sleep(1)
-            user4 = ctx.guild.get_member(int(qplayers[3].discord_id))
-            player_voice4 = user4.voice
-            if user4 == None:
-                pass
-            elif player_voice4 == None:
-                await user4.add_roles(role1)
-            else:
-                await user4.add_roles(role1)
-                await user4.move_to(channel1)
-
-            await asyncio.sleep(1)
-            user5 = ctx.guild.get_member(int(qplayers[4].discord_id))
-            player_voice5 = user5.voice
-            if user5 == None:
-                pass
-            elif player_voice5 == None:
-                await user5.add_roles(role1)
-            else:
-                await user5.add_roles(role1)
-                await user5.move_to(channel1)
-
-            await asyncio.sleep(1)
-            user6 = ctx.guild.get_member(int(qplayers[5].discord_id))
-            player_voice6 = user6.voice
-            if user6 == None:
-                pass
-            elif player_voice6 == None:
-                await user6.add_roles(role2)
-            else:
-                await user6.add_roles(role2)
-                await user6.move_to(channel2)
-
-            await asyncio.sleep(1)
-            user7 = ctx.guild.get_member(int(qplayers[6].discord_id))
-            player_voice7 = user7.voice
-            if user7 == None:
-                pass
-            elif player_voice7 == None:
-                await user7.add_roles(role2)
-            else:
-                await user7.add_roles(role2)
-                await user7.move_to(channel2)
-
-            await asyncio.sleep(1)
-            user8 = ctx.guild.get_member(int(qplayers[7].discord_id))
-            player_voice8 = user8.voice
-            if user8 == None:
-                pass
-            elif player_voice8 == None:
-                await user8.add_roles(role1)
-            else:
-                await user8.add_roles(role1)
-                await user8.move_to(channel1)
-
-            await asyncio.sleep(1)
-            user9 = ctx.guild.get_member(int(qplayers[8].discord_id))
-            player_voice9 = user9.voice
-            if user9 == None:
-                pass
-            elif player_voice9 == None:
-                await user9.add_roles(role1)
-            else:
-                await user9.add_roles(role1)
-                await user9.move_to(channel1)
-
-            await asyncio.sleep(1)
-            user10 = ctx.guild.get_member(int(qplayers[9].discord_id))
-            player_voice10 = user10.voice
-            if user10 == None:
-                pass
-            elif player_voice10 == None:
-                await user10.add_roles(role2)
-            else:
-                await user10.add_roles(role2)
-                await user10.move_to(channel2)
-
-            # Clearing all the lists for the next game.
-            queueCount.clear()
-            qplayers.clear()
-
-        # add user to queue if above if statements are not met.
+                embed = discord.Embed(title='',
+                                      description=f'{targetPlayer.name} joined the queue. {len(queueCount) + 1}/10',
+                                      color=discord.Color.red())
+                queueCount.append(targetPlayer)
+                await ctx.send(embed=embed)
         else:
-            embed = discord.Embed(title='',
-                                  description=f'{targetPlayer.name} joined the queue. {len(queueCount) + 1}/10',
+            embed = discord.Embed(title=f"", url="https://papathegoat.com/",
+                                  description=f'You have to use the <#{config.queue}> channel ',
                                   color=discord.Color.red())
-            queueCount.append(targetPlayer)
             await ctx.send(embed=embed)
     else:
         embed = discord.Embed(title=f"", url="https://papathegoat.com/",
-                              description=f'You have to use the <#{config.queue}> channel ',
+                              description=f'A Match is being made. Please wait.',
                               color=discord.Color.red())
         await ctx.send(embed=embed)
-
 
 # command to check how many people are in the queue
 @bot.command(pass_context=True, aliases=['q', 'Q'])
 async def queue(ctx):
+    await asyncio.sleep(1)
     if ctx.channel.id == config.queue:
         embed = discord.Embed(title=f"", url="https://papathegoat.com/",
                               description=f'There are {len(queueCount)} players in queue',
@@ -650,12 +693,18 @@ async def matchresult(ctx, matchnumber, team):
             guild = ctx.guild
             role1 = discord.utils.get(guild.roles, name=f"Match{matchnumber} Team1")
             role2 = discord.utils.get(guild.roles, name=f"Match{matchnumber} Team2")
+
+            await asyncio.sleep(1)
             await role1.delete()
+            await asyncio.sleep(1)
             await role2.delete()
 
             # Remove team channels
+            await asyncio.sleep(1)
             team1channel = discord.utils.get(guild.channels, name=f"Match{matchnumber} Team1")
             await team1channel.delete()
+
+            await asyncio.sleep(1)
             team2channel = discord.utils.get(guild.channels, name=f"Match{matchnumber} Team2")
             await team2channel.delete()
 
@@ -707,18 +756,18 @@ async def matchresult(ctx, matchnumber, team):
             embed.add_field(name="Winner", value='Team 1', inline=False)
             embed.add_field(name="Team #1",
                             value=f"<@{player1.discord_id}> - 3 = {player1.elo}\n "
-                                  f"<@{player2.discord_id}> - 3 = {player2.elo}\n "
-                                  f"<@{player3.discord_id}> - 3 = {player3.elo}\n"
-                                  f"<@{player4.discord_id}> - 3 = {player4.elo}\n"
-                                  f"<@{player5.discord_id}> - 3 = {player5.elo}",
+                                    f"<@{player2.discord_id}> - 3 = {player2.elo}\n "
+                                    f"<@{player3.discord_id}> - 3 = {player3.elo}\n"
+                                    f"<@{player4.discord_id}> - 3 = {player4.elo}\n"
+                                     f"<@{player5.discord_id}> - 3 = {player5.elo}",
                             inline=False)
             embed.add_field(name="Team #2",
-                            value=f"<@{player6.discord_id}> + 5 = {player6.elo}\n "
-                                  f"<@{player7.discord_id}> + 5 = {player7.elo}\n "
-                                  f"<@{player8.discord_id}> + 5 = {player8.elo}\n "
-                                  f"<@{player9.discord_id}> + 5 = {player9.elo}\n "
-                                  f"<@{player10.discord_id}> + 5 = {player10.elo}",
-                            inline=False)
+                                value=f"<@{player6.discord_id}> + 5 = {player6.elo}\n "
+                                      f"<@{player7.discord_id}> + 5 = {player7.elo}\n "
+                                      f"<@{player8.discord_id}> + 5 = {player8.elo}\n "
+                                      f"<@{player9.discord_id}> + 5 = {player9.elo}\n "
+                                      f"<@{player10.discord_id}> + 5 = {player10.elo}",
+                                inline=False)
             await ctx.message.delete()
             await channel.send(embed=embed)
 
@@ -726,12 +775,16 @@ async def matchresult(ctx, matchnumber, team):
             guild = ctx.guild
             role1 = discord.utils.get(guild.roles, name=f"Match{matchnumber} Team1")
             role2 = discord.utils.get(guild.roles, name=f"Match{matchnumber} Team2")
+            await asyncio.sleep(1)
             await role1.delete()
+            await asyncio.sleep(1)
             await role2.delete()
 
             # Remove team channels
+            await asyncio.sleep(1)
             team1channel = discord.utils.get(guild.channels, name=f"Match{matchnumber} Team1")
             await team1channel.delete()
+            await asyncio.sleep(1)
             team2channel = discord.utils.get(guild.channels, name=f"Match{matchnumber} Team2")
             await team2channel.delete()
     else:
@@ -742,8 +795,9 @@ async def matchresult(ctx, matchnumber, team):
 
 
 # bot command to leave queue
-@bot.command()
+@bot.command(pass_context=True, aliases=['l', 'L'])
 async def leave(ctx):
+    await asyncio.sleep(1)
     if ctx.channel.id == config.queue:
         # Getting users Player Class information
         D_ID = ctx.message.author.id
@@ -852,6 +906,7 @@ async def matchend(ctx, matchnumber):
         embed = discord.Embed(title='', description=f'Match #{matchNum} has been cancelled',
                               color=discord.Color.red())
         await ctx.send(embed=embed)
+
 
         # Remove role
         guild = ctx.guild
