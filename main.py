@@ -93,8 +93,17 @@ async def register(ctx, name):
         # Search pickle file to see if discord_id is already used. Each discord user has a uniquie ID
         targetPlayerid = getPlayerObject(D_ID, "discord_id", playerPool)
         targetPlayername = getPlayerObject(name, "name", playerPool)
-
-        if targetPlayerid in playerPool:
+        if " " in name:
+            embed = discord.Embed(title=f"", url="https://papathegoat.com/",
+                                  description='Please do not use spaces in your name',
+                                  color=discord.Color.red())
+            await ctx.send(embed=embed)
+        elif "#" not in name:
+            embed = discord.Embed(title=f"", url="https://papathegoat.com/",
+                                  description='Please register using your full riot ID',
+                                  color=discord.Color.red())
+            await ctx.send(embed=embed)
+        elif targetPlayerid in playerPool:
             embed = discord.Embed(title=f"", url="https://papathegoat.com/",
                                   description='You are already registered.',
                                   color=discord.Color.red())
