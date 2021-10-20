@@ -655,7 +655,7 @@ async def matchresult(ctx, matchnumber, team):
 
         # If team1 wins give them elo and take elo from team2. Also change their currentgame status to 0
         if team == 'team1':
-            matchHistory[matchlocation].winner = 1
+            matchHistory[intmatchnum].winner = 1
             team1count = 0
 
             for x in range(5):
