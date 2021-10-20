@@ -12,6 +12,7 @@ import requests
 
 
 intents = discord.Intents().all()
+intents.members = True
 bot = commands.Bot(command_prefix='-', intents=intents, help_command=None)
 
 # Stored Registered Players
@@ -54,6 +55,14 @@ def getPlayerObject(searchVal, searchAttr, fromList):
     else:
         return playerObject
 
+# Reusable function to get the match object
+def getMatchObject(searchVal, searchAttr, fromList):
+    matchObject = next(iter([p for p in fromList if getattr(p, searchAttr) == searchVal]), None)
+    if matchObject is None:
+        return None
+    else:
+        return matchObject
+
 
 # Print when bot is online and ready
 @bot.event
@@ -88,7 +97,7 @@ async def register(ctx, name):
         # The role to give when called.
         role = discord.utils.get(user.guild.roles, name="Register")
         # Sign up a player under a temp variable
-        tempPlayer = Player(name=name, elo=0, win=0, loss=0, discord_id=D_ID, currentmatch=0)
+        tempPlayer = Player(name=name, elo=0, win=0, loss=0, discord_id=D_ID, currentmatch=0, voted=0)
 
         # Search pickle file to see if discord_id is already used. Each discord user has a uniquie ID
         targetPlayerid = getPlayerObject(D_ID, "discord_id", playerPool)
@@ -240,7 +249,7 @@ async def testp(ctx):
     for x in range(9):
         await asyncio.sleep(1)
         tempPlayer = Player(name=f'test{number}', elo=random.randint(0, 100), win=0, loss=0, discord_id=1,
-                            currentmatch=0)
+                            currentmatch=0, voted=0)
         playerPool.append(tempPlayer)
         queueCount.append(tempPlayer)
         await ctx.send(f'test bot #{number + 1} made and in queue')
@@ -268,7 +277,6 @@ async def join(ctx):
             # Getting users Player Class information
             D_ID = ctx.message.author.id
             targetPlayer = getPlayerObject(D_ID, "discord_id", playerPool)
-
             # If Player is already in queue. Don't let them in queue
             if targetPlayer in queueCount:
                 embed = discord.Embed(title=f"", url="https://papathegoat.com/",
@@ -341,7 +349,7 @@ async def join(ctx):
                 saveload.writeMatchCount(matchCount)
 
                 # Saving the match infomation via pickles
-                tempMatch = Match(number=tempgamenum, team1=team1, team2=team2)
+                tempMatch = Match(number=tempgamenum, team1=team1, team2=team2, team1_votes=0, team2_votes=0,winner=0)
                 matchHistory.append(tempMatch)
                 saveload.writeMatchHistory(matchHistory)
                 # sending embed to discord channel for teams and map
@@ -360,13 +368,24 @@ async def join(ctx):
                 embed.add_field(name="Host",
                                 value=f"<@{qplayers[0].discord_id}>",
                                 inline=False)
-                await channel.send(
-                    f"<@{qplayers[0].discord_id}> <@{qplayers[3].discord_id}> <@{qplayers[4].discord_id}> <@{qplayers[7].discord_id}> <@{qplayers[8].discord_id}> <@{qplayers[1].discord_id}> <@{qplayers[2].discord_id}> <@{qplayers[5].discord_id}> <@{qplayers[6].discord_id}> <@{qplayers[9].discord_id}>",
+
+                # turn embed into variable
+                message = await channel.send(f"<@{qplayers[0].discord_id}> <@{qplayers[3].discord_id}> <@{qplayers[4].discord_id}> <@{qplayers[7].discord_id}> <@{qplayers[8].discord_id}> <@{qplayers[1].discord_id}> <@{qplayers[2].discord_id}> <@{qplayers[5].discord_id}> <@{qplayers[6].discord_id}> <@{qplayers[9].discord_id}>",
                     embed=embed)
+
+                # Number 1 and 2 discord Emojis
+                emojis = ['1\u20E3','2\u20e3']
+                # Loop adding Emojis to the embed
+                for emoji in emojis:
+                    await asyncio.sleep(1)
+                    await message.add_reaction(emoji)
+
 
                 # Create Temp Roles
                 guild = ctx.guild
+                await asyncio.sleep(1)
                 await guild.create_role(name=f"Match{add1} Team1")
+                await asyncio.sleep(1)
                 await guild.create_role(name=f"Match{add1} Team2")
 
                 # Create Voice Channels
@@ -391,7 +410,9 @@ async def join(ctx):
                 }
 
                 # Creating voice channels for the teams on that match.
+                await asyncio.sleep(1)
                 await guild.create_voice_channel(f"Match{add1} Team1", category=category, overwrites=overwrites1)
+                await asyncio.sleep(1)
                 await guild.create_voice_channel(f"Match{add1} Team2", category=category, overwrites=overwrites2)
 
                 # Setting up to give roles to players
@@ -557,6 +578,7 @@ async def join(ctx):
                 await ctx.send(embed=embed1)
             # add user to queue if above if statements are not met.
             else:
+
                 embed = discord.Embed(title='',
                                       description=f'{targetPlayer.name} joined the queue. {len(queueCount) + 1}/10',
                                       color=discord.Color.red())
@@ -589,14 +611,6 @@ async def queue(ctx):
                               color=discord.Color.red())
         await ctx.send(embed=embed)
 
-
-# Command makes a test match. Used to test a few things.
-@bot.command()
-@commands.has_role('Admin')
-async def testm(ctx):
-    tempMatch = Match(number=0, team1='team1', team2='team2')
-    matchHistory.append(tempMatch)
-    print(matchHistory)
 
 
 # Command to get 0 as the first matchCount number. Remember to code out matchCount = saveload.loadMatchCount() run command
@@ -641,17 +655,16 @@ async def matchresult(ctx, matchnumber, team):
 
         # If team1 wins give them elo and take elo from team2. Also change their currentgame status to 0
         if team == 'team1':
+            matchHistory[matchlocation].winner = 1
             team1count = 0
+
             for x in range(5):
                 targetPlayer = getPlayerObject(team1[team1count], "name", playerPool)
                 targetPlayer.elo = int(targetPlayer.elo) + 5
-                team1count += 1
-
-            team1currentreset = 0
-            for x in range(5):
-                targetPlayer = getPlayerObject(team1[team1currentreset], "name", playerPool)
                 targetPlayer.currentmatch = 0
-                team1currentreset += 1
+                targetPlayer.win = int(targetPlayer.win) + 1
+                targetPlayer.voted = 0
+                team1count += 1
 
             team2count = 0
             for x in range(5):
@@ -659,25 +672,10 @@ async def matchresult(ctx, matchnumber, team):
                 targetPlayer.elo = int(targetPlayer.elo) - 3
                 if targetPlayer.elo < 0:
                     targetPlayer.elo = 0
-                team2count += 1
-
-            team2currentreset = 0
-            for x in range(5):
-                targetPlayer = getPlayerObject(team2[team2currentreset], "name", playerPool)
                 targetPlayer.currentmatch = 0
-                team2currentreset += 1
-
-            team1win = 0
-            for x in range(5):
-                targetPlayer = getPlayerObject(team1[team1win], "name", playerPool)
-                targetPlayer.win = int(targetPlayer.win) + 1
-                team1win += 1
-
-            team2lose = 0
-            for x in range(5):
-                targetPlayer = getPlayerObject(team2[team2lose], "name", playerPool)
                 targetPlayer.loss = int(targetPlayer.loss) + 1
-                team2lose += 1
+                targetPlayer.voted = 0
+                team2count += 1
 
             saveload.writePlayerPool(playerPool)
 
@@ -723,43 +721,27 @@ async def matchresult(ctx, matchnumber, team):
         # If team2 wins give them elo and take elo from team1. Also change their currentgame status to 0
         elif team == 'team2':
 
+            matchHistory[intmatchnum].winner = 1
+
             team1count = 0
             for x in range(5):
                 targetPlayer = getPlayerObject(team1[team1count], "name", playerPool)
                 targetPlayer.elo = int(targetPlayer.elo) - 3
                 if targetPlayer.elo < 0:
                     targetPlayer.elo = 0
-                team1count += 1
-
-            team1currentreset = 0
-            for x in range(5):
-                targetPlayer = getPlayerObject(team1[team1currentreset], "name", playerPool)
                 targetPlayer.currentmatch = 0
-                team1currentreset += 1
+                targetPlayer.lose = int(targetPlayer.lose) + 1
+                targetPlayer.voted = 0
+                team1count += 1
 
             team2count = 0
             for x in range(5):
                 targetPlayer = getPlayerObject(team2[team2count], "name", playerPool)
                 targetPlayer.elo = int(targetPlayer.elo) + 5
-                team2count += 1
-
-            team2currentreset = 0
-            for x in range(5):
-                targetPlayer = getPlayerObject(team2[team2currentreset], "name", playerPool)
                 targetPlayer.currentmatch = 0
-                team2currentreset += 1
-
-            team1lose = 0
-            for x in range(5):
-                targetPlayer = getPlayerObject(team1[team1lose], "name", playerPool)
-                targetPlayer.loss = int(targetPlayer.loss) + 1
-                team1lose += 1
-
-            team2win = 0
-            for x in range(5):
-                targetPlayer = getPlayerObject(team2[team2win], "name", playerPool)
                 targetPlayer.win = int(targetPlayer.win) + 1
-                team2win += 1
+                targetPlayer.voted = 0
+                team2count += 1
 
             saveload.writePlayerPool(playerPool)
 
@@ -907,14 +889,17 @@ async def matchend(ctx, matchnumber):
         for x in range(5):
             targetPlayer = getPlayerObject(team1[team1currentreset], "name", playerPool)
             targetPlayer.currentmatch = 0
+            targetPlayer.voted = 0
             team1currentreset += 1
 
         team2currentreset = 0
         for x in range(5):
             targetPlayer = getPlayerObject(team2[team2currentreset], "name", playerPool)
             targetPlayer.currentmatch = 0
+            targetPlayer.voted = 0
             team2currentreset += 1
 
+        matchHistory[intmatchnum].winner = 1
         embed = discord.Embed(title='', description=f'Match #{matchNum} has been cancelled',
                               color=discord.Color.red())
         await ctx.send(embed=embed)
@@ -1046,5 +1031,197 @@ async def unregister(ctx, name):
         await ctx.send(embed=embed)
 
 
+# reaction based results
+@bot.event
+async def on_raw_reaction_add(payload):
+    await asyncio.sleep(1)
+    announcechannel = bot.get_channel(config.announcementID)
+    channel = bot.get_channel(payload.channel_id)
+    discordUser = payload.member
+    player = discordUser.display_name
+    targetPlayer = getPlayerObject(player, "name", playerPool)
+    message = await channel.fetch_message(payload.message_id)
+
+    if channel == announcechannel:
+        msg = await channel.fetch_message(payload.message_id)
+        embed = msg.embeds[0].title
+        matchlocation = int(embed[6:]) - 1
+        matchNum = int(matchHistory[matchlocation].number.number)
+
+        team1 = matchHistory[matchlocation].team1
+        team2 = matchHistory[matchlocation].team2
+
+        player1 = getPlayerObject(team1[0], "name", playerPool)
+        player2 = getPlayerObject(team1[1], "name", playerPool)
+        player3 = getPlayerObject(team1[2], "name", playerPool)
+        player4 = getPlayerObject(team1[3], "name", playerPool)
+        player5 = getPlayerObject(team1[4], "name", playerPool)
+        player6 = getPlayerObject(team2[0], "name", playerPool)
+        player7 = getPlayerObject(team2[1], "name", playerPool)
+        player8 = getPlayerObject(team2[2], "name", playerPool)
+        player9 = getPlayerObject(team2[3], "name", playerPool)
+        player10 = getPlayerObject(team2[4], "name", playerPool)
+
+        if targetPlayer == None:
+            pass
+
+        elif targetPlayer.voted == 1:
+            pass
+
+        elif matchHistory[matchlocation].winner == 1:
+            pass
+
+        elif matchHistory[matchlocation].team1_votes > 5:
+            matchHistory[matchlocation].winner = 1
+            team1count = 0
+
+            for x in range(5):
+                targetPlayer = getPlayerObject(team1[team1count], "name", playerPool)
+                targetPlayer.elo = int(targetPlayer.elo) + 5
+                targetPlayer.currentmatch = 0
+                targetPlayer.win = int(targetPlayer.win) + 1
+                targetPlayer.voted = 0
+                team1count += 1
+
+            team2count = 0
+            for x in range(5):
+                targetPlayer = getPlayerObject(team2[team2count], "name", playerPool)
+                targetPlayer.elo = int(targetPlayer.elo) - 3
+                if targetPlayer.elo < 0:
+                    targetPlayer.elo = 0
+                targetPlayer.currentmatch = 0
+                targetPlayer.loss = int(targetPlayer.loss) + 1
+                targetPlayer.voted = 0
+                team2count += 1
+
+            saveload.writePlayerPool(playerPool)
+
+
+            e = discord.Embed(title=f"Game #{matchNum}", description="", color=discord.Color.red())
+            e.add_field(name="Winner", value='Team 1', inline=False)
+            e.add_field(name="Team #1",
+                            value=f"<@{player1.discord_id}> + 5 = {player1.elo}\n "
+                                  f"<@{player2.discord_id}> + 5 = {player2.elo}\n "
+                                  f"<@{player3.discord_id}> + 5 = {player3.elo}\n"
+                                  f"<@{player4.discord_id}> + 5 = {player4.elo}\n"
+                                  f"<@{player5.discord_id}> + 5 = {player5.elo}",
+                            inline=False)
+            e.add_field(name="Team #2",
+                            value=f"<@{player6.discord_id}> - 3 = {player6.elo}\n "
+                                  f"<@{player7.discord_id}> - 3 = {player7.elo}\n "
+                                  f"<@{player8.discord_id}> - 3 = {player8.elo}\n "
+                                  f"<@{player9.discord_id}> - 3 = {player9.elo}\n "
+                                  f"<@{player10.discord_id}> - 3 = {player10.elo}",
+                            inline=False)
+
+            await message.edit(embed=e)
+
+            # Getting role information
+
+            guild = bot.get_guild(payload.guild_id)
+
+            role1 = discord.utils.get(guild.roles, name=f"Match{matchNum} Team1")
+            role2 = discord.utils.get(guild.roles, name=f"Match{matchNum} Team2")
+
+            await asyncio.sleep(1)
+            await role1.delete()
+            await asyncio.sleep(1)
+            await role2.delete()
+
+            # Remove team channels
+            await asyncio.sleep(1)
+            team1channel = discord.utils.get(guild.channels, name=f"Match{matchNum} Team1")
+            await team1channel.delete()
+
+            await asyncio.sleep(1)
+            team2channel = discord.utils.get(guild.channels, name=f"Match{matchNum} Team2")
+            await team2channel.delete()
+
+        elif matchHistory[matchlocation].team2_votes > 5:
+            matchHistory[matchlocation].winner = 1
+
+            team1count = 0
+            for x in range(5):
+                targetPlayer = getPlayerObject(team1[team1count], "name", playerPool)
+                targetPlayer.elo = int(targetPlayer.elo) -3
+                if targetPlayer.elo < 0:
+                    targetPlayer.elo = 0
+                targetPlayer.currentmatch = 0
+                targetPlayer.lose = int(targetPlayer.lose) + 1
+                targetPlayer.voted = 0
+                team1count += 1
+
+            team2count = 0
+            for x in range(5):
+                targetPlayer = getPlayerObject(team2[team2count], "name", playerPool)
+                targetPlayer.elo = int(targetPlayer.elo) + 5
+                targetPlayer.currentmatch = 0
+                targetPlayer.win = int(targetPlayer.win) + 1
+                targetPlayer.voted = 0
+                team2count += 1
+
+            saveload.writePlayerPool(playerPool)
+
+
+            e = discord.Embed(title=f"Game #{matchNum}", description="", color=discord.Color.red())
+
+            e.add_field(name="Winner", value='Team 2', inline=False)
+            e.add_field(name="Team #1",
+                            value=f"<@{player1.discord_id}> - 3 = {player1.elo}\n "
+                                  f"<@{player2.discord_id}> - 3 = {player2.elo}\n "
+                                  f"<@{player3.discord_id}> - 3 = {player3.elo}\n"
+                                  f"<@{player4.discord_id}> - 3 = {player4.elo}\n"
+                                  f"<@{player5.discord_id}> - 3 = {player5.elo}",
+                            inline=False)
+            e.add_field(name="Team #2",
+                            value=f"<@{player6.discord_id}> + 5 = {player6.elo}\n "
+                                  f"<@{player7.discord_id}> + 5 = {player7.elo}\n "
+                                  f"<@{player8.discord_id}> + 5 = {player8.elo}\n "
+                                  f"<@{player9.discord_id}> + 5 = {player9.elo}\n "
+                                  f"<@{player10.discord_id}> + 5 = {player10.elo}",
+                            inline=False)
+
+            await message.edit(embed=e)
+
+            # Getting role information
+
+            guild = bot.get_guild(payload.guild_id)
+
+            role1 = discord.utils.get(guild.roles, name=f"Match{matchNum} Team1")
+            role2 = discord.utils.get(guild.roles, name=f"Match{matchNum} Team2")
+
+            await asyncio.sleep(1)
+            await role1.delete()
+            await asyncio.sleep(1)
+            await role2.delete()
+
+            # Remove team channels
+            await asyncio.sleep(1)
+            team1channel = discord.utils.get(guild.channels, name=f"Match{matchNum} Team1")
+            await team1channel.delete()
+
+            await asyncio.sleep(1)
+            team2channel = discord.utils.get(guild.channels, name=f"Match{matchNum} Team2")
+            await team2channel.delete()
+
+        elif matchHistory[matchlocation].winner == 0:
+            if player in matchHistory[matchlocation].team1 or player in matchHistory[matchlocation].team2:
+                print(targetPlayer.voted)
+                if str(payload.emoji.name) == '1\u20E3':
+                    matchHistory[matchlocation].team1_votes += 1
+                    targetPlayer.voted = 1
+                    saveload.writeMatchHistory(matchHistory)
+                    saveload.writePlayerPool(playerPool)
+
+                if str(payload.emoji.name) == '2\u20e3':
+                    matchHistory[matchlocation].team2_votes += 1
+                    targetPlayer.voted = 1
+                    saveload.writeMatchHistory(matchHistory)
+                    saveload.writePlayerPool(playerPool)
+
+        else:
+            pass
+    else:
+        pass
 # Run the bot
 bot.run(config.token)
