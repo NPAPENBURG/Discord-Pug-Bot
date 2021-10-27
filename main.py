@@ -283,6 +283,7 @@ async def join(ctx):
                                       description='You are already in the Queue.',
                                       color=discord.Color.red())
                 await ctx.send(embed=embed)
+                await user.edit(nick=targetPlayer.name)
 
             # Player not found
             elif targetPlayer not in playerPool:
@@ -290,6 +291,7 @@ async def join(ctx):
                                       description='You are not registered.',
                                       color=discord.Color.red())
                 await ctx.send(embed=embed)
+                await user.edit(nick=targetPlayer.name)
 
 
             # If Player is already in a match. Don't let them in queue
@@ -298,10 +300,12 @@ async def join(ctx):
                                       description='You are already in a match.',
                                       color=discord.Color.red())
                 await ctx.send(embed=embed)
+                await user.edit(nick=targetPlayer.name)
 
 
             # If there are 9 people in queue and player is the 10th. Lets get the Match started
             elif len(queueCount) == (config.pugsize - 1):
+                await user.edit(nick=targetPlayer.name)
                 gameStarted = 1
                 # Team list where players will be assigned too.
                 team1 = []
@@ -574,7 +578,6 @@ async def join(ctx):
                 embed1 = discord.Embed(title='',
                                       description=f'Match has now been made. Players can now queue.',
                                       color=discord.Color.red())
-                queueCount.append(targetPlayer)
                 await ctx.send(embed=embed1)
             # add user to queue if above if statements are not met.
             else:
@@ -584,16 +587,19 @@ async def join(ctx):
                                       color=discord.Color.red())
                 queueCount.append(targetPlayer)
                 await ctx.send(embed=embed)
+                await user.edit(nick=targetPlayer.name)
         else:
             embed = discord.Embed(title=f"", url="https://papathegoat.com/",
                                   description=f'You have to use the <#{config.queue}> channel ',
                                   color=discord.Color.red())
             await ctx.send(embed=embed)
+            await user.edit(nick=targetPlayer.name)
     else:
         embed = discord.Embed(title=f"", url="https://papathegoat.com/",
                               description=f'A Match is being made. Please wait.',
                               color=discord.Color.red())
         await ctx.send(embed=embed)
+        await user.edit(nick=targetPlayer.name)
 
 # command to check how many people are in the queue
 @bot.command(pass_context=True, aliases=['q', 'Q'])
@@ -1062,6 +1068,7 @@ async def on_raw_reaction_add(payload):
         player9 = getPlayerObject(team2[3], "name", playerPool)
         player10 = getPlayerObject(team2[4], "name", playerPool)
 
+
         if targetPlayer == None:
             pass
 
@@ -1071,7 +1078,7 @@ async def on_raw_reaction_add(payload):
         elif matchHistory[matchlocation].winner == 1:
             pass
 
-        elif matchHistory[matchlocation].team1_votes > 5:
+        elif matchHistory[matchlocation].team1_votes > 0:
             matchHistory[matchlocation].winner = 1
             team1count = 0
 
@@ -1137,7 +1144,7 @@ async def on_raw_reaction_add(payload):
             team2channel = discord.utils.get(guild.channels, name=f"Match{matchNum} Team2")
             await team2channel.delete()
 
-        elif matchHistory[matchlocation].team2_votes > 5:
+        elif matchHistory[matchlocation].team2_votes > 0:
             matchHistory[matchlocation].winner = 1
 
             team1count = 0
