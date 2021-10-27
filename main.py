@@ -10,7 +10,6 @@ import asyncio
 from matchcountclass import MatchCounts
 import requests
 
-
 intents = discord.Intents().all()
 intents.members = True
 bot = commands.Bot(command_prefix='-', intents=intents, help_command=None)
@@ -39,13 +38,13 @@ registerID = 895801952502423583
 resultID = 895802052750503966
 queue = 895803600629035018
 
-
 # Checking to see if I am rate limted
 r = requests.head(url="https://discord.com/api/v1")
 try:
     print(f"Rate limit {int(r.headers['Retry-After']) / 60} minutes left")
 except:
     print("No rate limit")
+
 
 # Reusable function to get the player object
 def getPlayerObject(searchVal, searchAttr, fromList):
@@ -54,6 +53,7 @@ def getPlayerObject(searchVal, searchAttr, fromList):
         return None
     else:
         return playerObject
+
 
 # Reusable function to get the match object
 def getMatchObject(searchVal, searchAttr, fromList):
@@ -275,6 +275,7 @@ async def join(ctx):
     if gameStarted == 0:
         if ctx.channel.id == config.queue:
             # Getting users Player Class information
+            user = ctx.message.author
             D_ID = ctx.message.author.id
             targetPlayer = getPlayerObject(D_ID, "discord_id", playerPool)
             # If Player is already in queue. Don't let them in queue
@@ -320,8 +321,8 @@ async def join(ctx):
 
                 await asyncio.sleep(1)
                 embed2 = discord.Embed(title=f"", url="https://papathegoat.com/",
-                                      description='A match is being created please wait a few moments',
-                                      color=discord.Color.red())
+                                       description='A match is being created please wait a few moments',
+                                       color=discord.Color.red())
                 await ctx.send(embed=embed2)
 
                 # Reordering the Queue so its highest to lowest elo
@@ -353,7 +354,7 @@ async def join(ctx):
                 saveload.writeMatchCount(matchCount)
 
                 # Saving the match infomation via pickles
-                tempMatch = Match(number=tempgamenum, team1=team1, team2=team2, team1_votes=0, team2_votes=0,winner=0)
+                tempMatch = Match(number=tempgamenum, team1=team1, team2=team2, team1_votes=0, team2_votes=0, winner=0)
                 matchHistory.append(tempMatch)
                 saveload.writeMatchHistory(matchHistory)
                 # sending embed to discord channel for teams and map
@@ -374,16 +375,16 @@ async def join(ctx):
                                 inline=False)
 
                 # turn embed into variable
-                message = await channel.send(f"<@{qplayers[0].discord_id}> <@{qplayers[3].discord_id}> <@{qplayers[4].discord_id}> <@{qplayers[7].discord_id}> <@{qplayers[8].discord_id}> <@{qplayers[1].discord_id}> <@{qplayers[2].discord_id}> <@{qplayers[5].discord_id}> <@{qplayers[6].discord_id}> <@{qplayers[9].discord_id}>",
+                message = await channel.send(
+                    f"<@{qplayers[0].discord_id}> <@{qplayers[3].discord_id}> <@{qplayers[4].discord_id}> <@{qplayers[7].discord_id}> <@{qplayers[8].discord_id}> <@{qplayers[1].discord_id}> <@{qplayers[2].discord_id}> <@{qplayers[5].discord_id}> <@{qplayers[6].discord_id}> <@{qplayers[9].discord_id}>",
                     embed=embed)
 
                 # Number 1 and 2 discord Emojis
-                emojis = ['1\u20E3','2\u20e3']
+                emojis = ['1\u20E3', '2\u20e3']
                 # Loop adding Emojis to the embed
                 for emoji in emojis:
                     await asyncio.sleep(1)
                     await message.add_reaction(emoji)
-
 
                 # Create Temp Roles
                 guild = ctx.guild
@@ -426,7 +427,6 @@ async def join(ctx):
                 # Setting up to move Players
                 channel1 = discord.utils.get(ctx.guild.channels, name=f"Match{add1} Team1")
                 channel2 = discord.utils.get(ctx.guild.channels, name=f"Match{add1} Team2")
-
 
                 # Adding Team Roles and Moving Players to Team Voice Chats
                 await asyncio.sleep(1)
@@ -569,15 +569,14 @@ async def join(ctx):
                     await asyncio.sleep(1)
                     await user10.move_to(channel2)
 
-
                 # Clearing all the lists for the next game.
                 queueCount.clear()
                 qplayers.clear()
                 gameStarted = 0
 
                 embed1 = discord.Embed(title='',
-                                      description=f'Match has now been made. Players can now queue.',
-                                      color=discord.Color.red())
+                                       description=f'Match has now been made. Players can now queue.',
+                                       color=discord.Color.red())
                 await ctx.send(embed=embed1)
             # add user to queue if above if statements are not met.
             else:
@@ -593,13 +592,13 @@ async def join(ctx):
                                   description=f'You have to use the <#{config.queue}> channel ',
                                   color=discord.Color.red())
             await ctx.send(embed=embed)
-            await user.edit(nick=targetPlayer.name)
+
     else:
         embed = discord.Embed(title=f"", url="https://papathegoat.com/",
                               description=f'A Match is being made. Please wait.',
                               color=discord.Color.red())
         await ctx.send(embed=embed)
-        await user.edit(nick=targetPlayer.name)
+
 
 # command to check how many people are in the queue
 @bot.command(pass_context=True, aliases=['q', 'Q'])
@@ -616,7 +615,6 @@ async def queue(ctx):
                               description=f'You have to use the <#{config.queue}> channel ',
                               color=discord.Color.red())
         await ctx.send(embed=embed)
-
 
 
 # Command to get 0 as the first matchCount number. Remember to code out matchCount = saveload.loadMatchCount() run command
@@ -756,18 +754,18 @@ async def matchresult(ctx, matchnumber, team):
             embed.add_field(name="Winner", value='Team 1', inline=False)
             embed.add_field(name="Team #1",
                             value=f"<@{player1.discord_id}> - 3 = {player1.elo}\n "
-                                    f"<@{player2.discord_id}> - 3 = {player2.elo}\n "
-                                    f"<@{player3.discord_id}> - 3 = {player3.elo}\n"
-                                    f"<@{player4.discord_id}> - 3 = {player4.elo}\n"
-                                     f"<@{player5.discord_id}> - 3 = {player5.elo}",
+                                  f"<@{player2.discord_id}> - 3 = {player2.elo}\n "
+                                  f"<@{player3.discord_id}> - 3 = {player3.elo}\n"
+                                  f"<@{player4.discord_id}> - 3 = {player4.elo}\n"
+                                  f"<@{player5.discord_id}> - 3 = {player5.elo}",
                             inline=False)
             embed.add_field(name="Team #2",
-                                value=f"<@{player6.discord_id}> + 5 = {player6.elo}\n "
-                                      f"<@{player7.discord_id}> + 5 = {player7.elo}\n "
-                                      f"<@{player8.discord_id}> + 5 = {player8.elo}\n "
-                                      f"<@{player9.discord_id}> + 5 = {player9.elo}\n "
-                                      f"<@{player10.discord_id}> + 5 = {player10.elo}",
-                                inline=False)
+                            value=f"<@{player6.discord_id}> + 5 = {player6.elo}\n "
+                                  f"<@{player7.discord_id}> + 5 = {player7.elo}\n "
+                                  f"<@{player8.discord_id}> + 5 = {player8.elo}\n "
+                                  f"<@{player9.discord_id}> + 5 = {player9.elo}\n "
+                                  f"<@{player10.discord_id}> + 5 = {player10.elo}",
+                            inline=False)
             await ctx.message.delete()
             await channel.send(embed=embed)
 
@@ -910,7 +908,6 @@ async def matchend(ctx, matchnumber):
                               color=discord.Color.red())
         await ctx.send(embed=embed)
 
-
         # Remove role
         guild = ctx.guild
         role1 = discord.utils.get(guild.roles, name=f"Match{matchnumber} Team1")
@@ -929,6 +926,8 @@ async def matchend(ctx, matchnumber):
         await team2channel.delete()
 
         saveload.writePlayerPool(playerPool)
+
+
 # Give a Player Elo
 @bot.command()
 @commands.has_role('Admin')
@@ -1068,7 +1067,6 @@ async def on_raw_reaction_add(payload):
         player9 = getPlayerObject(team2[3], "name", playerPool)
         player10 = getPlayerObject(team2[4], "name", playerPool)
 
-
         if targetPlayer == None:
             pass
 
@@ -1103,23 +1101,22 @@ async def on_raw_reaction_add(payload):
 
             saveload.writePlayerPool(playerPool)
 
-
             e = discord.Embed(title=f"Game #{matchNum}", description="", color=discord.Color.red())
             e.add_field(name="Winner", value='Team 1', inline=False)
             e.add_field(name="Team #1",
-                            value=f"<@{player1.discord_id}> + 5 = {player1.elo}\n "
-                                  f"<@{player2.discord_id}> + 5 = {player2.elo}\n "
-                                  f"<@{player3.discord_id}> + 5 = {player3.elo}\n"
-                                  f"<@{player4.discord_id}> + 5 = {player4.elo}\n"
-                                  f"<@{player5.discord_id}> + 5 = {player5.elo}",
-                            inline=False)
+                        value=f"<@{player1.discord_id}> + 5 = {player1.elo}\n "
+                              f"<@{player2.discord_id}> + 5 = {player2.elo}\n "
+                              f"<@{player3.discord_id}> + 5 = {player3.elo}\n"
+                              f"<@{player4.discord_id}> + 5 = {player4.elo}\n"
+                              f"<@{player5.discord_id}> + 5 = {player5.elo}",
+                        inline=False)
             e.add_field(name="Team #2",
-                            value=f"<@{player6.discord_id}> - 3 = {player6.elo}\n "
-                                  f"<@{player7.discord_id}> - 3 = {player7.elo}\n "
-                                  f"<@{player8.discord_id}> - 3 = {player8.elo}\n "
-                                  f"<@{player9.discord_id}> - 3 = {player9.elo}\n "
-                                  f"<@{player10.discord_id}> - 3 = {player10.elo}",
-                            inline=False)
+                        value=f"<@{player6.discord_id}> - 3 = {player6.elo}\n "
+                              f"<@{player7.discord_id}> - 3 = {player7.elo}\n "
+                              f"<@{player8.discord_id}> - 3 = {player8.elo}\n "
+                              f"<@{player9.discord_id}> - 3 = {player9.elo}\n "
+                              f"<@{player10.discord_id}> - 3 = {player10.elo}",
+                        inline=False)
 
             await message.edit(embed=e)
 
@@ -1150,7 +1147,7 @@ async def on_raw_reaction_add(payload):
             team1count = 0
             for x in range(5):
                 targetPlayer = getPlayerObject(team1[team1count], "name", playerPool)
-                targetPlayer.elo = int(targetPlayer.elo) -3
+                targetPlayer.elo = int(targetPlayer.elo) - 3
                 if targetPlayer.elo < 0:
                     targetPlayer.elo = 0
                 targetPlayer.currentmatch = 0
@@ -1169,24 +1166,23 @@ async def on_raw_reaction_add(payload):
 
             saveload.writePlayerPool(playerPool)
 
-
             e = discord.Embed(title=f"Game #{matchNum}", description="", color=discord.Color.red())
 
             e.add_field(name="Winner", value='Team 2', inline=False)
             e.add_field(name="Team #1",
-                            value=f"<@{player1.discord_id}> - 3 = {player1.elo}\n "
-                                  f"<@{player2.discord_id}> - 3 = {player2.elo}\n "
-                                  f"<@{player3.discord_id}> - 3 = {player3.elo}\n"
-                                  f"<@{player4.discord_id}> - 3 = {player4.elo}\n"
-                                  f"<@{player5.discord_id}> - 3 = {player5.elo}",
-                            inline=False)
+                        value=f"<@{player1.discord_id}> - 3 = {player1.elo}\n "
+                              f"<@{player2.discord_id}> - 3 = {player2.elo}\n "
+                              f"<@{player3.discord_id}> - 3 = {player3.elo}\n"
+                              f"<@{player4.discord_id}> - 3 = {player4.elo}\n"
+                              f"<@{player5.discord_id}> - 3 = {player5.elo}",
+                        inline=False)
             e.add_field(name="Team #2",
-                            value=f"<@{player6.discord_id}> + 5 = {player6.elo}\n "
-                                  f"<@{player7.discord_id}> + 5 = {player7.elo}\n "
-                                  f"<@{player8.discord_id}> + 5 = {player8.elo}\n "
-                                  f"<@{player9.discord_id}> + 5 = {player9.elo}\n "
-                                  f"<@{player10.discord_id}> + 5 = {player10.elo}",
-                            inline=False)
+                        value=f"<@{player6.discord_id}> + 5 = {player6.elo}\n "
+                              f"<@{player7.discord_id}> + 5 = {player7.elo}\n "
+                              f"<@{player8.discord_id}> + 5 = {player8.elo}\n "
+                              f"<@{player9.discord_id}> + 5 = {player9.elo}\n "
+                              f"<@{player10.discord_id}> + 5 = {player10.elo}",
+                        inline=False)
 
             await message.edit(embed=e)
 
@@ -1230,5 +1226,7 @@ async def on_raw_reaction_add(payload):
             pass
     else:
         pass
+
+
 # Run the bot
 bot.run(config.token)
